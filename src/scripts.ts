@@ -131,7 +131,7 @@ const editTask = async (id: number, newTitle: string) => {
       title: newTitle,
     });
     console.log('Task edited successfully:', response.data);
-    getTasks(); // Fetch tasks again after editing to update the taskArr
+    getTasks();
   } catch (error) {
     console.error('Error editing task:', error);
   }
