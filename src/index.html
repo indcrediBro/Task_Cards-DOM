@@ -13,8 +13,25 @@
   </head>
   <body>
     <div id="app">
-      <input type="text" class="taskTitle" placeholder="Enter task text" />
-      <button class="createButton">Create Task</button>
+      <div class="main border">
+        <label for="title">Task Name</label>
+        <input
+          type="text"
+          class="taskTitle border"
+          placeholder="Enter task title"
+          id="title"
+          required
+        />
+        <label for="discription">Task Details</label>
+        <textarea
+          type="text"
+          class="taskDetail border"
+          placeholder="Enter task discription"
+          id="discription"
+          required
+        ></textarea>
+        <input type="button" class="btn_create border" value="Create Task" />
+      </div>
       <div class="tasksContainer"></div>
     </div>
 

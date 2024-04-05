@@ -1,17 +1,20 @@
-/* eslint-disable radix */
 /* eslint-disable no-use-before-define */
 import axios from 'axios';
-import { logDate } from './logDate';
-
-logDate();
 
 type Task = {
-  id: unknown;
+  id: number;
   title: string;
+  description: string;
+  dateCreated: string;
 };
 
 const apiUrl = 'http://localhost:3004/tasks/';
+
 let taskArr: Task[] = [];
+const taskTitleInput = document.querySelector('.taskTitle') as HTMLInputElement;
+const taskDescriptionInput = document.querySelector(
+  '.taskDetail'
+) as HTMLInputElement;
 
 const getTasks = () => {
   axios
@@ -26,7 +29,7 @@ const getTasks = () => {
     });
 };
 
-const deleteTask = async (id: unknown) => {
+const deleteTask = async (id: string) => {
   try {
     const response = await axios.delete(`${apiUrl}${id}`);
     if (response.data.success) {
@@ -36,45 +39,6 @@ const deleteTask = async (id: unknown) => {
     console.error('Error deleting task:', error);
   }
   getTasks();
-};
-const addDeleteEventListeners = () => {
-  const deleteButtons = document.querySelectorAll('.deleteButton');
-  deleteButtons.forEach((button) => {
-    button.addEventListener('click', () => {
-      const id = button.getAttribute('data-id');
-      deleteTask(id);
-    });
-  });
-};
-
-const addEditEventListeners = () => {
-  const editButtons = document.querySelectorAll('.editButton');
-  editButtons.forEach((button) => {
-    button.addEventListener('click', () => {
-      const id = parseInt(button.getAttribute('data-id'));
-      editTaskInput(id);
-    });
-  });
-};
-
-const displayTasks = () => {
-  const tasksContainer = document.querySelector('.tasksContainer');
-
-  if (tasksContainer) {
-    tasksContainer.innerHTML = '';
-    taskArr.forEach((task: Task) => {
-      const taskDiv = document.createElement('div');
-      taskDiv.className = 'task';
-      taskDiv.innerHTML = `
-                <p>${task.title}</p>
-                <button class="deleteButton" data-id="${task.id}">Delete</button>
-                <button class="editButton" data-id="${task.id}">Edit</button>
-            `;
-      tasksContainer.appendChild(taskDiv);
-    });
-    addDeleteEventListeners();
-    addEditEventListeners();
-  }
 };
 
 const saveTask = async (task: Task) => {
@@ -87,57 +51,161 @@ const saveTask = async (task: Task) => {
   }
 };
 
-const createTask = () => {
-  const taskTitleInput = document.querySelector(
-    '.taskTitle'
-  ) as HTMLInputElement;
-  const title = taskTitleInput.value;
-
-  if (title !== '') {
-    const task: Task = { id: Date.now(), title };
-    saveTask(task);
-    getTasks();
-    taskTitleInput.value = '';
-  }
-};
-
-const editTaskInput = (id: number) => {
-  const taskDiv = document.querySelector(`.task[data-id="${id}"]`);
-  if (taskDiv) {
-    const currentTitle = taskDiv.querySelector('p');
-    const inputElement = document.createElement('input');
-    inputElement.value = currentTitle.innerHTML;
-
-    const saveButton = document.createElement('button');
-    saveButton.textContent = 'Save';
-
-    const editButton = taskDiv.querySelector('.editButton');
-
-    saveButton.addEventListener('click', () => {
-      editTask(id, inputElement.value);
-      inputElement.remove();
-      saveButton.remove();
-    });
-
-    taskDiv.removeChild(editButton);
-    taskDiv.appendChild(inputElement);
-    taskDiv.appendChild(saveButton);
-  }
-};
-
-const editTask = async (id: number, newTitle: string) => {
+const updateTask = async (id: string, updatedTask: Partial<Task>) => {
   try {
-    const response = await axios.put(`${apiUrl}/${id}`, {
-      title: newTitle,
-    });
-    console.log('Task edited successfully:', response.data);
+    const response = await axios.put(`${apiUrl}${id}`, updatedTask);
+    console.log('Task updated successfully:', response.data);
     getTasks();
+  } catch (error) {
+    console.error('Error updating task:', error);
+  }
+};
+
+const editTask = async (
+  id: string,
+  newTitle: string,
+  newDescription: string,
+  newDate: string
+) => {
+  try {
+    const updatedTask: Partial<Task> = {
+      title: newTitle,
+      description: newDescription,
+      dateCreated: newDate,
+    };
+    updateTask(id, updatedTask);
   } catch (error) {
     console.error('Error editing task:', error);
   }
 };
 
-getTasks();
+const displayTasks = () => {
+  const tasksContainer = document.querySelector('.tasksContainer');
 
-const createButton = document.querySelector('.createButton');
+  if (tasksContainer) {
+    tasksContainer.innerHTML = '';
+    taskArr.forEach((task: Task) => {
+      const taskDiv = document.createElement('div');
+      taskDiv.className = `task border task${task.id}`;
+      taskDiv.innerHTML = `
+                <h2>${task.title}</h2>
+                <p>${task.description}</p>
+                <date>${task.dateCreated}</date>
+                <div>
+                <button class="editButton" data-id="${task.id}">Edit</button>
+                <button class="deleteButton" data-id="${task.id}">Delete</button>
+                </div>
+                `;
+      tasksContainer.appendChild(taskDiv);
+    });
+    addDeleteEventListeners();
+    addEditEventListeners();
+  }
+};
+
+const addDeleteEventListeners = () => {
+  const deleteButtons = document.querySelectorAll('.deleteButton');
+  deleteButtons.forEach((button) => {
+    button.addEventListener('click', () => {
+      const id = button.getAttribute('data-id');
+      if (id) {
+        deleteTask(id);
+      } else {
+        console.error('Task ID not found.');
+      }
+    });
+  });
+};
+
+const addEditEventListeners = () => {
+  const tasksContainer = document.querySelector('.tasksContainer');
+  if (tasksContainer) {
+    tasksContainer.addEventListener('click', (event) => {
+      const target = event.target as HTMLElement;
+      if (target.classList.contains('editButton')) {
+        const id = target.getAttribute('data-id');
+        if (id) {
+          editTaskInput(id);
+        } else {
+          console.error('Task ID not found.');
+        }
+      }
+    });
+  }
+};
+
+const editTaskInput = (id: string) => {
+  const taskDiv = document.querySelector(`.task${id}`);
+  if (taskDiv) {
+    const currentTitle = taskDiv.querySelector('h2');
+    currentTitle.classList.add('hidden');
+    const currentTitleInput = document.createElement(
+      'input'
+    ) as HTMLInputElement;
+    currentTitleInput.value = currentTitle.textContent;
+
+    const currentDescription = taskDiv.querySelector('p');
+    currentDescription.classList.add('hidden');
+    const currentDescriptionInput = document.createElement(
+      'textarea'
+    ) as HTMLTextAreaElement;
+    currentDescriptionInput.value = currentDescription.textContent;
+
+    const currentDate = taskDiv.querySelector('date');
+
+    const saveButton = document.createElement('button');
+    saveButton.textContent = 'Save';
+
+    const editButton = taskDiv.querySelector('.editButton');
+    editButton.classList.add('hidden');
+
+    saveButton.addEventListener('click', () => {
+      editTask(
+        id,
+        currentTitleInput.value,
+        currentDescriptionInput.value,
+        currentDate.textContent
+      );
+      currentTitle.classList.remove('hidden');
+      // currentTitleInput.classList.add('hidden');
+      currentTitleInput?.remove();
+      currentDescription.classList.remove('hidden');
+      // currentDescriptionInput.classList.add('hidden');
+      currentDescriptionInput.remove();
+      saveButton.remove();
+    });
+    console.log(`Added Listner for Edit Task ${id}`);
+
+    taskDiv.appendChild(currentTitleInput);
+    taskDiv.appendChild(currentDescriptionInput);
+    taskDiv.appendChild(saveButton);
+  }
+};
+
+const createTask = () => {
+  const titleData: string = taskTitleInput.value;
+  const descriptionData: string = taskDescriptionInput.value;
+
+  if (titleData && descriptionData) {
+    const task: Task = {
+      id: 0,
+      title: titleData,
+      description: descriptionData,
+      dateCreated: new Date().toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+      }),
+    };
+    saveTask(task);
+    taskTitleInput.value = '';
+    taskDescriptionInput.value = '';
+  } else {
+    console.error('Title and description are required.');
+  }
+};
+
+const createButton = document.querySelector('.btn_create') as HTMLElement;
 createButton?.addEventListener('click', createTask);
+
+getTasks();
